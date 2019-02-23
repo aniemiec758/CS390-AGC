@@ -1,3 +1,5 @@
+// Anthony Niemiec, Purdue University Spring 2019
+
 #include <iostream>
 #include <linux/memfd.h>
 #include <sys/mman.h>
@@ -7,13 +9,23 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include <cstdlib>
+#include <iomanip>
 #include <chrono>
 #define PAGESIZE 4096 // 4KB in x86 systems
 #define MEMSIZE 1000
 
-void calcTime(auto start, auto finish) { // calculates time between two points to the nearest nanosecond
-	auto timeTaken = std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count();
-	std::cout << timeTaken << "ns, " << timeTaken/MEMSIZE << "ns per operation\n";
+auto calcTime(auto start, auto finish) { // calculates time between two points to the nearest nanosecond
+	float timeTaken = std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count();
+	std::cout << std::setw(6) << timeTaken << "ns,\t" << std::setw(7) << timeTaken/MEMSIZE << "ns per operation\n";
+	return timeTaken;
+}
+
+void calcDiff(auto t1, auto t2) { // compares two time measurements
+	float delta = abs(t1-t2);
+	printf("\033[33m"); // set a different color
+	std::cout << "Difference:\t" << std::setw(6) << delta << "ns,\t" << std::setw(7) << delta/MEMSIZE << "ns per operation\n";
+	printf("\033[0m"); // restore default terminal color
 }
 
 int main(int argc, char** argv) {
@@ -48,8 +60,8 @@ int main(int argc, char** argv) {
 		memset(&mal[i], 'a', 1);
 	}
 	auto finish = std::chrono::high_resolution_clock::now();
-	printf("Malloc: ");
-	calcTime(start, finish);
+	printf("Malloc write:\t");
+	auto mal_writeTime = calcTime(start, finish);
 
 	// measuring mmap write time
 	start = std::chrono::high_resolution_clock::now();
@@ -57,16 +69,33 @@ int main(int argc, char** argv) {
 		memset(&shared_mem[i], 'a', 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
-	printf("Mmap: ");
-	calcTime(start, finish);
+	printf("Mmap write:\t");
+	auto mmap_writeTime = calcTime(start, finish);
+
+	// comparing the two
+	calcDiff(mal_writeTime, mmap_writeTime);
 
     // Part 2: measuring read time of mmap vs malloc
 	// measuring malloc read time
-	
+	char mallocBuff[MEMSIZE];
+	start = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < MEMSIZE; i++) {
+		memcpy(&mal[i], &mallocBuff[i], 1);
+	}
+	finish = std::chrono::high_resolution_clock::now();
+	printf("\nMalloc read:\t");
+	auto mal_readTime = calcTime(start, finish);
 
+	// measuring mmap read time
+	char memBuff[MEMSIZE];
+	start = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < MEMSIZE; i++) {
+		memcpy(&shared_mem[i], &memBuff[i], 1);
+	}
+	finish = std::chrono::high_resolution_clock::now();
+	printf("Mmap read:\t");
+	auto mmap_readTime = calcTime(start, finish);
 
-
-
-
-
+	// comparing the two
+	calcDiff(mal_readTime, mmap_readTime);
 }
