@@ -24,7 +24,7 @@ auto calcTime(auto start, auto finish) { // calculates time between two points t
 void calcDiff(auto t1, auto t2) { // compares two time measurements
 	float delta = abs(t1-t2);
 	printf("\033[33m"); // set a different color
-	std::cout << "Difference:\t\t" << std::setw(6) << delta << "ns,\t" << std::setw(7) << delta/MEMSIZE << "ns per operation\n";
+	std::cout << "Difference:\t" << std::setw(6) << delta << "ns,\t" << std::setw(7) << delta/MEMSIZE << "ns per operation\n";
 	printf("\033[0m"); // restore default terminal color
 }
 
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 	// measuring SHARED mmap write time
 	start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < MEMSIZE; i++) {
-		memset(&shared_mem[i], 'b', 1);
+		memset(&shared_mem[i], 'a', 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
 	// comparing to malloc
@@ -85,14 +85,14 @@ int main(int argc, char** argv) {
 	// measuring PRIVATE mmap write time
 	start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < MEMSIZE; i++) {
-		memset(&private_mem[i], 'c', 1);
+		memset(&private_mem[i], 'a', 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
 	printf("\033[31mPRIVATE\033[0m mmap write:\t");
 	calcDiff(mal_writeTime, calcTime(start, finish));
 
 // Part 2: measuring read time of mmap vs malloc
-	printf("\nRead time of shared/private mmap vs malloc\n");
+	printf("\nRead time of \033[31mprivate mmap\033[0m vs malloc\n");
 
 	// measuring malloc read time
 	char mallocBuff[MEMSIZE];
@@ -101,28 +101,19 @@ int main(int argc, char** argv) {
 		memcpy(&mal[i], &mallocBuff[i], 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
-	printf("Malloc read:\t\t");
+	printf("Malloc read:\t");
 	auto mal_readTime = calcTime(start, finish);
 
-	// measuring SHARED mmap read time
-	char sharedBuff[MEMSIZE];
+	// measuring mmap read time
+	char memBuff[MEMSIZE];
 	start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < MEMSIZE; i++) {
-		memcpy(&shared_mem[i], &sharedBuff[i], 1);
+		memcpy(&private_mem[i], &memBuff[i], 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
-	// comparing to malloc
-	printf("\033[31mSHARED\033[0m mmap read:\t");
-	calcDiff(mal_readTime, calcTime(start, finish));
+	printf("Mmap read:\t");
+	auto mmap_readTime = calcTime(start, finish);
 
-	// measuring PRIVATE mmap read time
-	char privateBuff[MEMSIZE];
-	start = std::chrono::high_resolution_clock::now();
-	for (int i = 0; i < MEMSIZE; i++) {
-		memcpy(&private_mem[i], &privateBuff[i], 1);
-	}
-	finish = std::chrono::high_resolution_clock::now();
-	// comparing to malloc
-	printf("\033[31mPRIVATE\033[0m mmap read:\t");
-	calcDiff(mal_readTime, calcTime(start, finish));
+	// comparing the two
+	calcDiff(mal_readTime, mmap_readTime);
 }
