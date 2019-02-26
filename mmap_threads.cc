@@ -59,20 +59,20 @@ void snapshotThread(int inFile, int fSize) {
 	int i = 0;
 	while (i < MEMSIZE) {
 		if (private_mem[i] != i) { // detected a change
-			printf("Error: change detected at index %d!\n", i);
+			fprintf(stdout, "Error: change detected at index %d!\n", i);
 			break;
 		}
 		i %= (MEMSIZE-1); // always keeps i below MEMSIZE
 
 		// to show that we're still checking
-		sleep(1000);
-		printf("Working...\n");
+		sleep(1);
+		fprintf(stdout, "Working...\n");
 	}
 }
 
 // Part 4: the mutating thread
 void mutatorThread(char* shared_mem) {
-	sleep(2000); // let the snapshot thread run a few times to make sure it works
+	sleep(5); // let the snapshot thread run a few times to make sure that it works
 
 	// make some random changes
 	for (int i = 0; i < MEMSIZE; i++) {
