@@ -29,7 +29,7 @@ void calcDiff(auto t1, auto t2) { // compares two time measurements
 }
 
 int main(int argc, char** argv) {
-    // Part 0: setting up environment
+// Part 0: setting up environment
 	// initializing malloc'd memory
 	char* mal = (char*)malloc(MEMSIZE * sizeof(char));
 
@@ -46,14 +46,23 @@ int main(int argc, char** argv) {
 	lseek(inFile, fSize, SEEK_SET);
 	write(inFile, "", 1); // avoid random bugs upon file creation
 
-	// initializing a mmap based on the anonymous file descriptor
+	// initializing a SHARED mmap based on the anonymous file descriptor
 	char* shared_mem = static_cast<char*>(mmap(NULL, fSize, PROT_READ | PROT_WRITE, MAP_SHARED, inFile, 0));
 	if (shared_mem == (char*)MAP_FAILED) {
 		perror("mmap");
 		exit(1);
 	}
 
-    // Part 1: measuring write time of mmap vs malloc
+	// initializing a PRIVATE mmap based on the anonymous file descriptor
+	char* private_mem = static_cast<char*>(mmap(NULL, fSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, inFile, 0));
+	if (private_mem == (char*)MAP_FAILED) {
+		perror("mmap");
+		exit(1);
+	}
+
+// Part 1: measuring write time of SHARED mmap vs malloc
+	printf("Write time of \033[31mshared mmap\033[0m vs malloc\n");
+
 	// measuring malloc write time
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < MEMSIZE; i++) {
@@ -75,7 +84,9 @@ int main(int argc, char** argv) {
 	// comparing the two
 	calcDiff(mal_writeTime, mmap_writeTime);
 
-    // Part 2: measuring read time of mmap vs malloc
+// Part 2: measuring read time of PRIVATE mmap vs malloc
+	printf("\nRead time of \033[31mprivate mmap\033[0m vs malloc\n");
+
 	// measuring malloc read time
 	char mallocBuff[MEMSIZE];
 	start = std::chrono::high_resolution_clock::now();
@@ -83,14 +94,14 @@ int main(int argc, char** argv) {
 		memcpy(&mal[i], &mallocBuff[i], 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
-	printf("\nMalloc read:\t");
+	printf("Malloc read:\t");
 	auto mal_readTime = calcTime(start, finish);
 
 	// measuring mmap read time
 	char memBuff[MEMSIZE];
 	start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < MEMSIZE; i++) {
-		memcpy(&shared_mem[i], &memBuff[i], 1);
+		memcpy(&private_mem[i], &memBuff[i], 1);
 	}
 	finish = std::chrono::high_resolution_clock::now();
 	printf("Mmap read:\t");
