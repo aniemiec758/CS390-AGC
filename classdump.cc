@@ -1,32 +1,39 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <cstring>
+#include <fcntl.h>
+#include <fstream>
+#include <iostream>
+#include <stdio.h>
+#include <unistd.h>
 
 #define err(s)					\
-	printf("Error: %s\n", s);	\
+	printf("-> Error: %s\n", s);	\
 	exit(1);
 
-size_t getFilesize(const char* filename) {
-	struct stat st;
-	stat(filename, &st);
-	return st.st_size;
+/*
+size_t getFilesize(std::ifstream* fd) {
+	fd->seekg(0, std::ios::end);
+	size_t size = fd->tellg();
+	fd->seekg(0, std::ios::beg);
+	return size;
 }
+*/
 
+/*
 // reads through a .class file and dumps sections as defined in the JVM 8 specification
 //   see Chapter 4: https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf
-int classdump(int fd) {
-	
+int classdump(std::ifstream fd, size_t fSize, const char* fName) {
+	printf("Dumping classfile %s:\n", fName);
+	printf("  Size: %zu\n---\n", fSize);
 
+	// useful .class buffers
+	char u1[1]; char u2[2];
+	char u4[4]; char u8[8];
 
 
 
 	return 0; // success
 }
+*/
 
 int main(int argc, char** argv) {
 	// usage
@@ -45,32 +52,27 @@ int main(int argc, char** argv) {
 	}
 
 	// opening file descriptor
-	int inFile = open(filename, O_RDONLY);
-	if (inFile < 0) {
-		printf("Could not find file, %s\n", filename);
-		perror("memfd_create");
-		return -1;
+	std::ifstream inFile;// = (std::ifstream*)malloc(sizeof(std::ifstream));
+	inFile.open(filename, std::ios::in);
+	if (inFile.fail()) {
+		err("could not open/locate file");
 	}
-	int filesize = getFilesize(argv[1]);
+	// getting size
+	inFile.seekg(0, std::ios::end);
+	size_t filesize = inFile.tellg();
+	inFile.seekg(0, std::ios::beg);
 
-	// creating mmap of file
-	char* map = static_cast<char*>(mmap(0, filesize, PROT_READ, MAP_SHARED, inFile, 0));
-	if (map == MAP_FAILED) {
-		printf("Error in creating mmap\n");
-		perror("mmap");
-		exit(-1);
-	}
+/*					commencing the classdump					*/
+	printf("Dumping classfile %s:\n", filename);
+	printf("  Size: %zu\n---\n", filesize);
 
-	// reading mmap
-	char* magic[4];
-	memcpy(magic, map, 4);
-	if (map[0] == 0xCAFEBABE) {
-		printf("success!\n");
-	}
+	// useful .class buffers
+	char u1[1]; char u2[2];
+	char u4[4]; char u8[8];
 
-	for (int i = 0; i < filesize; i++) {
-		printf("%c", map[i]);
-	}
+
+	// cleanup
+	inFile.close();
 
 	return 0;
 }

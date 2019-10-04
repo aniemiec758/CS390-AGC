@@ -1,7 +1,7 @@
-all: clean classdump
+all: classdump
 
 classdump:
-	gcc -g -o classdump classdump.cc
+	g++ -g -o classdump classdump.cc
 
 clean:
 	rm classdump
