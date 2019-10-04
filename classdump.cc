@@ -9,32 +9,8 @@
 	printf("-> Error: %s\n", s);	\
 	exit(1);
 
-/*
-size_t getFilesize(std::ifstream* fd) {
-	fd->seekg(0, std::ios::end);
-	size_t size = fd->tellg();
-	fd->seekg(0, std::ios::beg);
-	return size;
-}
-*/
-
-/*
 // reads through a .class file and dumps sections as defined in the JVM 8 specification
 //   see Chapter 4: https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf
-int classdump(std::ifstream fd, size_t fSize, const char* fName) {
-	printf("Dumping classfile %s:\n", fName);
-	printf("  Size: %zu\n---\n", fSize);
-
-	// useful .class buffers
-	char u1[1]; char u2[2];
-	char u4[4]; char u8[8];
-
-
-
-	return 0; // success
-}
-*/
-
 int main(int argc, char** argv) {
 	// usage
 	if (argc != 2) {
@@ -70,6 +46,8 @@ int main(int argc, char** argv) {
 	char u1[1]; char u2[2];
 	char u4[4]; char u8[8];
 
+
+/*					end of classdump						*/
 
 	// cleanup
 	inFile.close();
