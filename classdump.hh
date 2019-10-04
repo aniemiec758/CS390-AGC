@@ -1,7 +1,7 @@
 // %x will print a 4-byte hex value (sizeof an int),
 //   %hhx prints a 1-byte hex value
-void print_uBuff(char* u, int n) {
-	for (int i = 0; i < n; i++) {
+void print_uBuff(char* u, int len) {
+	for (int i = 0; i < len; i++) {
 		printf("%hhx", u[i]);
 	}
 }
@@ -17,3 +17,12 @@ bool checkMagic(char* u4) {
 		u4[3] == static_cast<char>(0xbe)
 	);
 }
+
+// takes a u_x buffer and converts it to decimal (buffer initially
+//	contains hex after ld(u_x))
+/* TODO TODO TODO
+long uBuffToDecimal(char* u, int len) {
+	long dec = ;
+	for (int i = 0; i < len; i++) { // LSB stored at end; buffers are Big-Endian
+		
+*/
