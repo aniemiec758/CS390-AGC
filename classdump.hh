@@ -1,3 +1,7 @@
+#define err(s)                     \
+	printf("-> Error: %s\n", s);  \
+	exit(1);
+
 // %x will print a 4-byte hex value (sizeof an int),
 //   %hhx prints a 1-byte hex value
 void print_uBuff(char* u, int len) {
@@ -31,8 +35,7 @@ bool checkMagic(char* u4) {
 	) { return 0; }
 
 	// corrupted header
-	printf("-> potentially corrupted .class file: magic number 0xCAFEBABE not detected!\n");
-	exit(1);
+	err("potentially corrupted .class file: magic number 0xCAFEBABE not detected!\n");
 }
 
 // also must only be done once; this is because Java bytecode
@@ -47,11 +50,19 @@ bool isLittleEndian() {
 	return 0;
 }
 
+/*
 // takes a u_x buffer and converts it to decimal (buffer initially
 //	contains hex after ld(u_x))
-/* TODO TODO TODO
-long uBuffToDecimal(char* u, int len) {
-	long dec = ;
-	for (int i = 0; i < len; i++) { // LSB stored at end; buffers are Big-Endian
-		
+long uBuffToDecimal(char* u, int len) { // TODO: type-upgrading to `long` isn't the best, but then again, this is only called for human-readable output as opposed to any deep funtionality
+	if (sizeof(u) == 1) {
+		return *u;
+	} else if (sizeof(u) == 2) {
+		return *(short*)u;
+	} else if (sizeof(u) == 4) {
+		return *(int32_t*)u;
+	} else if (sizeof(u) == 8) {
+		return *(long*)u;
+	}
+	err("unexpected call to decimal()");
+}
 */

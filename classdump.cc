@@ -14,14 +14,9 @@
 	inFile.read(n, sizeof(n));
 #define print(u)				\
 	print_uBuff(u, sizeof(u));
-/* TODO TODO TODO
-#define decimal(u)				\
+/*
+#define asDecimal(u)			\
 	uBuffToDecimal(u, sizeof(u));
-
-// TODO idea: what if this simply uses mmap() to place the char*
-//	array into a uint_32 or whatever, no need for a for-loop
-//	(doesn't work on both endian-nesses, however)
-
 */
 
 // reads through a .class file and dumps sections as defined in the JVM 8 specification
@@ -53,17 +48,6 @@ int main(int argc, char** argv) {
 	size_t filesize = inFile.tellg();
 	inFile.seekg(0, std::ios::beg);
 
-/*	
-	// checking Endian-ness of the machine: Java bytecode is strictly Big-Endian itself
-	if (isLittleEndian()) {
-		#undef ld
-		#define ld(n) \
-			for (char i=sizeof(n)-1; i>=0; i--) { \
-				inFile.read(n+i, 1); \
-			}
-	}
-*/	
-
 /*					commencing the classdump					*/
 	printf("\nDumping classfile %s:\n", filename);
 	printf("  Size: %zu B\n---\n", filesize);
@@ -76,32 +60,28 @@ int main(int argc, char** argv) {
 	char u1[1]; char u2[2];
 	char u4[4]; char u8[8];
 
-	// checking for magic number, 0xCAFEBABE (also checks Endian-ness
+	// checking for magic number, 0xCAFEBABE (also checks Endian-ness)
 	ld(u4);
 	if (checkMagic(u4) == 0) { // flag for Little-Endian machine
+		// simply change the macro for loading, and we're good to go - no further changes necessary
 		#undef ld
 		#define ld(n)							\
 			for (char i=sizeof(n)-1; i>=0; i--) {	\
 				inFile.read(n+i, 1);			\
 			}
 	}
-/*
-	if (!checkMagic(u4)) { // TODO construct buffers in an Endian-independent way at some point
-		err("potentially corrupted .class file: magic number 0xCAFEBABE not detected!")
-	}
-*/
 	printf("Magic number found: 0x"); print(u4); printf("\n");
 	// misc header info
 	ld(u2); printf("Minor version [currently in hex]: "); print(u2); printf("\n");
 	ld(u2); printf("Major version [currently in hex]: "); print(u2); printf("\n");
 	ld(u2); printf("Number of items in the constant pool [currently in hex]: "); print(u2); printf("\n");
 
-
-/* TODO TODO TODO
-	ld(u2); printf("Minor version: %d\n", decimal(u2));
-	ld(u2); printf("Major version: %d\n", decimal(u2));
-	ld(u2); printf("Number of items in constant pool: %d\n", decimal(u2));
+/*
+	ld(u2); printf("Minor version: %d\n", asDecimal(u2));
+	ld(u2); printf("Major version: %d\n", asDecimal(u2));
+	ld(u2); printf("Number of items in constant pool: %d\n", asDecimal(u2));
 */
+
 	// the constant pool
 	cpoolSize = *(short*)(u2); // cast buffer to a 2-byte pointer, then dereference
 	for (short i = 0; i < cpoolSize; i++) {
