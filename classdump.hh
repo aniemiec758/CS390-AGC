@@ -2,6 +2,9 @@
 	printf("-> Error: %s\n", s);  \
 	exit(1);
 
+enum Endianness { LITTLE, BIG };
+Endianness endianness;
+
 // %x will print a 4-byte hex value (sizeof an int),
 //   %hhx prints a 1-byte hex value
 void print_uBuff(char* u, int len) {
@@ -25,14 +28,14 @@ bool checkMagic(char* u4) {
 		u4[1] == static_cast<char>(0xfe) &&
 		u4[2] == static_cast<char>(0xba) &&
 		u4[3] == static_cast<char>(0xbe)
-	) { return 1; }
+	) { return 1; endianness = BIG; }
 	// check for Little-Endian
 	if (
 		u4[3] == static_cast<char>(0xca) &&
 		u4[2] == static_cast<char>(0xfe) &&
 		u4[1] == static_cast<char>(0xba) &&
 		u4[0] == static_cast<char>(0xbe)
-	) { return 0; }
+	) { return 0; endianness = LITTLE; }
 
 	// corrupted header
 	err("potentially corrupted .class file: magic number 0xCAFEBABE not detected!\n");

@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 	char u1[1]; char u2[2];
 	char u4[4]; char u8[8];
 
-	// checking for magic number, 0xCAFEBABE (also checks Endian-ness)
+	// checking for magic number, 0xCAFEBABE (also checks Endian-ness and sets that flag)
 	ld(u4);
 	if (checkMagic(u4) == 0) { // flag for Little-Endian machine
 		// simply change the macro for loading, and we're good to go - no further changes necessary
@@ -85,9 +85,64 @@ int main(int argc, char** argv) {
 	// the constant pool
 	cpoolSize = *(short*)(u2); // cast buffer to a 2-byte pointer, then dereference
 	for (short i = 0; i < cpoolSize; i++) {
-	
-printf("hello #%d of %d\n", i, cpoolSize);
-	
+		printf("Entry %d:\n", i);
+
+		ld(u1); // get the tag
+		switch (*u1) {
+			case 1:		// CONSTANT_Utf8
+				ld(u2); // length of constant
+				if (endianness == BIG) {
+					for (short i = 0; i < *(short*)u2; i++) {
+printf("-a\n");						
+					}
+				} else {
+					for (short i = *(short*)u2 - 1; i >= 0; i--) {
+printf("-b\n");						
+					}
+				}
+				break;
+			case 3:		// CONSTANT_Integer
+				
+				break;
+			case 4:		// CONSTANT_Float
+				
+				break;
+			case 5:		// CONSTANT_Long
+				
+				break;
+			case 6:		// CONSTANT_Double
+				
+				break;
+			case 7:		// CONSTANT_Class
+				
+				break;
+			case 8:		// CONSTANT_String
+				
+				break;
+			case 9:		// CONSTANT_Fieldref
+				
+				break;
+			case 10:		// CONSTANT_Methodref
+				
+				break;
+			case 11:		// CONSTANT_InterfaceMethodref
+				
+				break;
+			case 12:		// CONSTANT_NameAndtype
+				
+				break;
+			case 15:		// CONSTANT_MethodHandle
+				
+				break;
+			case 16:		// CONSTANT_MethodType
+				
+				break;
+			case 18:		// CONSTANT_InvokeDynamic
+				
+				break;
+			default:
+				printf("Unexpected value for constant! %d\n", *u1);
+		}
 	}
 
 
