@@ -52,20 +52,3 @@ bool isLittleEndian() {
 	}
 	return 0;
 }
-
-/*
-// takes a u_x buffer and converts it to decimal (buffer initially
-//	contains hex after ld(u_x))
-long uBuffToDecimal(char* u, int len) { // TODO: type-upgrading to `long` isn't the best, but then again, this is only called for human-readable output as opposed to any deep funtionality
-	if (sizeof(u) == 1) {
-		return *u;
-	} else if (sizeof(u) == 2) {
-		return *(short*)u;
-	} else if (sizeof(u) == 4) {
-		return *(int32_t*)u;
-	} else if (sizeof(u) == 8) {
-		return *(long*)u;
-	}
-	err("unexpected call to decimal()");
-}
-*/
