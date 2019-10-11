@@ -68,17 +68,17 @@ int main(int argc, char** argv) {
 	// misc header info
 	ld(u2); printf("Minor version: %d\n", *(short*)u2);
 	ld(u2); printf("Major version: %d\n", *(short*)u2);
-	ld(u2); printf("\nNumber of items in the constant pool: %d\n", *(short*)u2);
 
 	// the constant pool
+	ld(u2); printf("\nNumber of items in the constant pool: %d\n", *(short*)u2);
 	short cpoolSize = *(short*)(u2); // cast buffer to a 2-byte pointer, then dereference
 	for (short i = 0; i < cpoolSize; i++) {
-		printf("Entry %d:\n", i);
+		printf("  Entry %d:\n", i);
 
 		ld(u1); // get the tag
 		switch (*u1) {
 			case 1:		// CONSTANT_Utf8
-{				printf("-CONSTANT_Utf8 ");
+{				printf("  -CONSTANT_Utf8 ");
 				ld(u2); // length of constant
 				short len = *(short*)u2;
 				char* utf8_constant = (char*)malloc(len);
@@ -101,78 +101,120 @@ int main(int argc, char** argv) {
 				free(utf8_constant);
 }				break;
 			case 3:		// CONSTANT_Integer
-				printf("-CONSTANT_Integer:\n");
+				printf("  -CONSTANT_Integer:\n");
 				ld(u4); printf("\t%ld\n", *(long*)u4);
 				break;
 			case 4:		// CONSTANT_Float
-				printf("-CONSTANT_Float:\n");
+				printf("  -CONSTANT_Float:\n");
 				ld(u4); printf("\t%f\n", *(float*)u4);
 				break;
 			case 5:		// CONSTANT_Long
 // TODO are the ld(u8) lines done correctly, or should it actually be two separate ld(u4) lines [u4 high_bytes comes before u4 low_bytes in the JVM 8 spec]
-				printf("-CONSTANT_Long:\n");
+				printf("  -CONSTANT_Long:\n");
 				ld(u8); printf("\t%llu\n", *(long long*)u8);
 				break;
 			case 6:		// CONSTANT_Double
 // TODO same as above concerning ld(u8) vs using two ld(u4) lines
-				printf("-CONSTANT_Double:\n");
+				printf("  -CONSTANT_Double:\n");
 				ld(u8); printf("\t%lf\n", *(double*)u8);
 				break;
 			case 7:		// CONSTANT_Class
-				printf("-CONSTANT_Class:\n");
+				printf("  -CONSTANT_Class:\n");
 				ld(u2); printf("\tname_index located at constant pool index %d\n", *(short*)u2);
 				// TODO make the check for if this is actually CONSTANT_utf8, as the JVM 8 spec asserts
 				break;
 			case 8:		// CONSTANT_String
-				printf("-CONSTANT_String:\n");
+				printf("  -CONSTANT_String:\n");
 				ld(u2); printf("\tstring_index located at constant pool index %d\n", *(short*)u2);
 				// TODO make the check for if this is actually CONSTANT_utf8, as the JVM 8 spec asserts
 				break;
 			case 9:		// CONSTANT_Fieldref
-				printf("-CONSTANT_Fieldref:\n");
+				printf("  -CONSTANT_Fieldref:\n");
 				ld(u2); printf("\tclass_index located at constant pool index %d\n", *(short*)u2);
 				ld(u2); printf("\tname_and_type_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 10:		// CONSTANT_Methodref
-				printf("-CONSTANT_Methodref:\n");
+				printf("  -CONSTANT_Methodref:\n");
 				ld(u2); printf("\tclass_index located at constant pool index %d\n", *(short*)u2);
 				ld(u2); printf("\tname_and_type_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 11:		// CONSTANT_InterfaceMethodref
-				printf("-CONSTANT_InterfaceMethodref:\n");
+				printf("  -CONSTANT_InterfaceMethodref:\n");
 				ld(u2); printf("\tclass_index located at constant pool index %d\n", *(short*)u2);
 				ld(u2); printf("\tname_and_type_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 12:		// CONSTANT_NameAndtype
-				printf("-CONSTANT_NameAndType:\n");
+				printf("  -CONSTANT_NameAndType:\n");
 				ld(u2); printf("\tname_index located at constant pool index %d\n", *(short*)u2);
 				ld(u2); printf("\tdescriptor_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 15:		// CONSTANT_MethodHandle
-				printf("-CONSTANT_MethodHandle:\n");
+				printf("  -CONSTANT_MethodHandle:\n");
 				ld(u1); printf("\tReference kind: %d\n", *(char*)u1);
 				ld(u2); printf("\treference_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 16:		// CONSTANT_MethodType
-				printf("-CONSTANT_MethodType:\n");
+				printf("  -CONSTANT_MethodType:\n");
 				ld(u2); printf("\tdescriptor_index located at constant pool index %d\n", *(short*)u2);
 				// TODO like above, make JVM 8 spec checks
 				break;
 			case 18:		// CONSTANT_InvokeDynamic
-				printf("-CONSTANT_InvokeDynamic:\n");
+				printf("  -CONSTANT_InvokeDynamic:\n");
 				ld(u2); printf("\tbootstrap_method_attr_index located at constant pool index %d\n", *(short*)u2);
 				ld(u2); printf("\tname_and_type_index located at constant pool index %d\n", *(short*)u2);
 				break;
 				// TODO like above, make JVM 8 spec checks
 			default:
-				printf("Unexpected value for constant! %d\n", *u1);
+				printf("  -Unexpected value for constant! %d\n", *u1);
 		}
 	}
+// TODO potental issue: final element in constant pool is missing?
+
+	// misc middle info
+	ld(u2); printf("\nAccess flag bits: %d\n", *(short*)u2);
+	ld(u2); printf("this_class: %d\n", *(short*)u2);
+	ld(u2); printf("super_class: %d\n", *(short*)u2);
+	ld(u2); printf("Number of interfaces: %d\n", *(short*)u2);
+	printf("interfaces[%d]: ", *(short*)u2);
+	ld(u2); printf("%d\n", *(short*)u2);
+
+	// the fields pool
+	ld(u2); printf("\nNumber of items in the fields pool: %d\n", *(short*)u2);
+	short fpoolSize = *(short*)u2;
+	for (short i = 0; i < fpoolSize; i++) {
+		printf("Entry %d:\n", i);
+
+		ld(u2); // get the access flags
+		parseAccessFlags(*(short*)u2);
+
+		ld(u2); printf("\tname_index located at constant pool index %d\n", *(short*)u2);
+		ld(u2); printf("\tdescriptor_index located at constant pool index %d\n", *(short*)u2);
+
+		ld(u2); printf("\tNumber of attributes for this field: %d\n", *(short*)u2);
+		short apoolSize = *(short*)u2;
+		for (short j = 0; j < apoolSize; j++) {
+			ld(u2); printf("\t\tattribute_name_index located at %d\n", *(short*)u2);
+			ld(u4); printf("\t\tLength of the attribute: %ld\n", *(long*)u4);
+			printf("\t\tThe attribute itself, in Big-Endian:\n");
+			for(long k = 0; k < *(long*)u4; k++) {
+				ld(u1); print(u1);
+			}
+		}
+	}
+
+
+/*	// the methods pool
+	ld(u2); printf("\nNumber of items in the methods pool: %d\n", *(short*)u2);
+	short mpoolSize = *(short*)u2;
+	for (short i = 0; i < mpoolSize; i++) {
+		printf("Entry %d:\n", i);
+*/
+		
 
 
 // scratch work
