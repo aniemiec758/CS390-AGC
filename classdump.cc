@@ -7,13 +7,20 @@
 
 #include "classdump.hh"
 
-#define err(s)					\
-	printf("-> Error: %s\n", s);	\
+#define err(s)								\
+	printf("-> Error: %s\n", s);				\
 	exit(1);
-// TODO in some places, it would be really conventient if ld(n) returned the value of the read-in bytes alongside actually doing it
-#define ld(n)					\
-	inFile.read(n, sizeof(n));
-#define print(u)				\
+// TODO in some places, it would be really conventient if ld(n) was able to return the value of the read-in bytes alongside actually doing it
+#if __ORDER_BIG_ENDIAN__
+	#define ld(n)							\
+		inFile.read(n, sizeof(n));
+#else
+	#define ld(n)							\
+		for (char i=sizeof(n)-1; i>=0; i--) {	\
+			inFile.read(n+i, 1);			\
+		}
+#endif
+#define print(u)							\
 	print_uBuff(u, sizeof(u));
 
 // reads through a .class file and dumps sections as defined in the JVM 8 specification
@@ -44,6 +51,9 @@ int main(int argc, char** argv) {
 	inFile.seekg(0, std::ios::end);
 	size_t filesize = inFile.tellg();
 	inFile.seekg(0, std::ios::beg);
+	if (filesize < 4) { // TODO actual smallest .class size?
+		err("file too small to be a .class file (insufficient space for magic number)");
+	}
 
 /*					commencing the classdump					*/
 	printf("\nDumping classfile %s:\n", filename);
@@ -54,16 +64,21 @@ int main(int argc, char** argv) {
 	char u1[1]; char u2[2];
 	char u4[4]; char u8[8];
 
-	// checking for magic number, 0xCAFEBABE (also checks Endian-ness and sets that flag)
+	// checking for magic number, 0xCAFEBABE
+	// NOTE: in the macros above, ld() will ensure that the byte buffers
+	//	are all Big-Endian, like the JVM spec
 	ld(u4);
-	if (checkMagic(u4) == 0) { // flag for Little-Endian machine
-		// simply change the macro for loading, and we're good to go - no further changes necessary
-		#undef ld
-		#define ld(n)							\
-			for (char i=sizeof(n)-1; i>=0; i--) {	\
-				inFile.read(n+i, 1);			\
-			}
+	if ( !(
+		u4[0] == static_cast<char>(0xca) &&
+		u4[1] == static_cast<char>(0xfe) &&
+		u4[2] == static_cast<char>(0xba) &&
+		u4[3] == static_cast<char>(0xbe)
+		)
+	) {
+		printf("Received magic number: 0x %hhx %hhx %hhx %hhx\n", u4[0], u4[1], u4[2], u4[3]);
+		err("potentially corrupted .class file: magic number 0xCAFEBABE not detected!\n");
 	}
+
 	printf("Magic number found: 0x"); print(u4); printf("\n");
 	// misc header info
 	ld(u2); printf("Minor version: %d\n", *(short*)u2);
@@ -83,7 +98,7 @@ int main(int argc, char** argv) {
 				short len = *(short*)u2;
 				char* utf8_constant = (char*)malloc(len);
 				// we must rely back on endianness, because this isn't going into the register (where the ld macro deals with endianness for us)
-				if (endianness == BIG) {
+				if (__ORDER_BIG_ENDIAN__) {
 					printf("(in Big-Endian format):\n\t");
 					for (short i = 0; i < len; i++) {
 						inFile.read(utf8_constant+i, 1);
@@ -220,30 +235,6 @@ int main(int argc, char** argv) {
 // scratch work
 
 printf("\nTO BE CONTINUED... [scratch work below]\n");
-
-// TODO need a #define macro that converts a buffer into decimal
-
-// TODO update uBuffToDecimal to return a template <T>, so
-//	that it returns uchar for u1, short for u2, uint for u4,
-//	and long for u8 (currently returns long, wastes space)
-
-
-/*
-	int32_t s;
-	inFile.read(reinterpret_cast<char*>(&s), 4);
-	printf("%x\n", s);
-*/
-
-// TODO endianness thought:
-//	change ld() to point to a load_little() or load_big()
-//	function based on if the machine is big or little endian:
-//	this way, the code will be endian-independent due to
-//	the u_x buffers separating the code from the hardware
-// TODO are the buffers actually already endian-independent?
-
-	ld(u4); // TODO endian-ness?
-	print(u4);
-	
 
 // end of scratch work
 
