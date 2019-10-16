@@ -11,7 +11,7 @@
 	printf("-> Error: %s\n", s);				\
 	exit(1);
 // TODO in some places, it would be really conventient if ld(n) was able to return the value of the read-in bytes alongside actually doing it
-#if __ORDER_BIG_ENDIAN__
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 	#define ld(n)							\
 		inFile.read(n, sizeof(n));
 #else
@@ -54,10 +54,16 @@ int main(int argc, char** argv) {
 	if (filesize < 4) { // TODO actual smallest .class size?
 		err("file too small to be a .class file (insufficient space for magic number)");
 	}
+	// storing endianness
+	if (!calculateEndianness()) {
+		err("could not calculate Endianness of machine!");
+	}
 
 /*					commencing the classdump					*/
 	printf("\nDumping classfile %s:\n", filename);
-	printf("  Size: %zu B\n---\n", filesize);
+	printf("  Size: %zu B\n", filesize);
+	calculateEndianness();
+	printf("---\n");
 
 	// useful .class buffers; the JVM 8 spec utilizes 1-, 2-, 4-, and 8-byte tags
 	// macros at the top of the file allow for syntax ld(u_x) -> read(u_x, x)
@@ -68,13 +74,7 @@ int main(int argc, char** argv) {
 	// NOTE: in the macros above, ld() will ensure that the byte buffers
 	//	are all Big-Endian, like the JVM spec
 	ld(u4);
-	if ( !(
-		u4[0] == static_cast<char>(0xca) &&
-		u4[1] == static_cast<char>(0xfe) &&
-		u4[2] == static_cast<char>(0xba) &&
-		u4[3] == static_cast<char>(0xbe)
-		)
-	) {
+	if (!checkMagic(u4)) { // neither Big nor Little Endian gives us the magic number
 		printf("Received magic number: 0x %hhx %hhx %hhx %hhx\n", u4[0], u4[1], u4[2], u4[3]);
 		err("potentially corrupted .class file: magic number 0xCAFEBABE not detected!\n");
 	}
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 				short len = *(short*)u2;
 				char* utf8_constant = (char*)malloc(len);
 				// we must rely back on endianness, because this isn't going into the register (where the ld macro deals with endianness for us)
-				if (__ORDER_BIG_ENDIAN__) {
+				if (endianness == BIG) {
 					printf("(in Big-Endian format):\n\t");
 					for (short i = 0; i < len; i++) {
 						inFile.read(utf8_constant+i, 1);

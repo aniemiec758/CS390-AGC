@@ -1,3 +1,6 @@
+enum Endianness { BIG, LITTLE };
+Endianness endianness;
+
 // %x will print a 4-byte hex value (sizeof an int),
 //   %hhx prints a 1-byte hex value
 void print_uBuff(char* u, int len) {
@@ -5,6 +8,45 @@ void print_uBuff(char* u, int len) {
 		printf("%hhx", u[i]);
 	}
 }
+
+// declares Endianness of the machine
+bool calculateEndianness() {
+	if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
+		endianness = BIG;
+		printf("  Machine is Big-Endian\n");
+		return 1;
+	} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+		endianness = LITTLE;
+		printf("  Machine is Little-Endian\n");
+		return 1;
+	}
+	return 0;
+}
+
+// only must be done once, specifically with a four-byte buffer;
+//	because the buffer is comprised of char's so that the
+//	ifstream may be read into it, we must convert hex -> char
+bool checkMagic(char* u4) {
+	// check for Big-Endian
+	if (
+		endianness == BIG &&
+		u4[0] == static_cast<char>(0xca) &&
+		u4[1] == static_cast<char>(0xfe) &&
+		u4[2] == static_cast<char>(0xba) &&
+		u4[3] == static_cast<char>(0xbe)
+	) { return 1; }
+	// check for Little-Endian
+	if (
+		endianness == LITTLE &&
+		u4[3] == static_cast<char>(0xca) &&
+		u4[2] == static_cast<char>(0xfe) &&
+		u4[1] == static_cast<char>(0xba) &&
+		u4[0] == static_cast<char>(0xbe)
+	) { return 1; }
+
+	return 0;
+}
+
 
 // small helper function for comprehending and printing access
 //	flags for Fields, i.e. in the field pool of the classfile
