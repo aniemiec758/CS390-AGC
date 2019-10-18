@@ -4,4 +4,4 @@ classdump:
 	g++ -g -o classdump classdump.cc
 
 clean:
-	rm classdump
+	rm -f classdump

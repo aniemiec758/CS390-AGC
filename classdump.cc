@@ -13,12 +13,14 @@
 // TODO in some places, it would be really conventient if ld(n) was able to return the value of the read-in bytes alongside actually doing it
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 	#define ld(n)							\
-		inFile.read(n, sizeof(n));
+		inFile.read(n, sizeof(n));			\
+		byteCount += sizeof(n);
 #else
 	#define ld(n)							\
 		for (char i=sizeof(n)-1; i>=0; i--) {	\
 			inFile.read(n+i, 1);			\
-		}
+		}								\
+		byteCount += sizeof(n);
 #endif
 #define print(u)							\
 	print_uBuff(u, sizeof(u));
@@ -26,6 +28,8 @@
 // reads through a .class file and dumps sections as defined in the JVM 8 specification
 //   see Chapter 4: https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf
 int main(int argc, char** argv) {
+	long byteCount = 0; // very useful debug variable to determine where we are at in the .class file
+
 	// usage
 	if (argc != 2) {
 		printf("-> Usage: %s <filename>\n", argv[0]);
@@ -86,8 +90,9 @@ int main(int argc, char** argv) {
 
 	// the constant pool
 	ld(u2); printf("\nNumber of items in the constant pool: %d\n", *(short*)u2);
+	printf("  Entry 0:\n  -Reserved for `this` keyword\n"); // TODO aren't there cases where this isn't true i.e. static classes?
 	short cpoolSize = *(short*)(u2); // cast buffer to a 2-byte pointer, then dereference
-	for (short i = 0; i < cpoolSize; i++) {
+	for (short i = 1; i < cpoolSize; i++) { // size of constant pool ranges [1,n], because 0 is a reserved index
 		printf("  Entry %d:\n", i);
 
 		ld(u1); // get the tag
@@ -111,13 +116,14 @@ int main(int argc, char** argv) {
 				}
 				for (short i = 0; i < len; i++) {
 					printf("%hhx", utf8_constant[i]);
+					byteCount++; // debug variable to show where we are in the hexdump
 				}
 				printf("\n");
 				free(utf8_constant);
 }				break;
 			case 3:		// CONSTANT_Integer
 				printf("  -CONSTANT_Integer:\n");
-				ld(u4); printf("\t%ld\n", *(long*)u4);
+				ld(u4); printf("\t%d\n", *(int*)u4);
 				break;
 			case 4:		// CONSTANT_Float
 				printf("  -CONSTANT_Float:\n");
@@ -126,7 +132,7 @@ int main(int argc, char** argv) {
 			case 5:		// CONSTANT_Long
 // TODO are the ld(u8) lines done correctly, or should it actually be two separate ld(u4) lines [u4 high_bytes comes before u4 low_bytes in the JVM 8 spec]
 				printf("  -CONSTANT_Long:\n");
-				ld(u8); printf("\t%llu\n", *(long long*)u8);
+				ld(u8); printf("\t%ld\n", *(long*)u8);
 				break;
 			case 6:		// CONSTANT_Double
 // TODO same as above concerning ld(u8) vs using two ld(u4) lines
@@ -188,21 +194,25 @@ int main(int argc, char** argv) {
 				printf("  -Unexpected value for constant! %d\n", *u1);
 		}
 	}
-// TODO potental issue: final element in constant pool is missing?
 
 	// misc middle info
-	ld(u2); printf("\nAccess flag bits: %d\n", *(short*)u2);
-	ld(u2); printf("this_class: %d\n", *(short*)u2);
-	ld(u2); printf("super_class: %d\n", *(short*)u2);
-	ld(u2); printf("Number of interfaces: %d\n", *(short*)u2);
-	printf("interfaces[%d]: ", *(short*)u2);
-	ld(u2); printf("%d\n", *(short*)u2);
+	ld(u2); printf("\nAccess flag bits: %d\n", *(short*)u2); // TODO flesh out, eventually
+	ld(u2); printf("this_class located at constant pool index %d\n", *(short*)u2);
+	ld(u2); printf("super_class located at constant pool index %d\n", *(short*)u2);
+
+	// the interfaces pool
+	ld(u2); printf("\nNumber of interfaces: %d", *(short*)u2);
+	short ipoolSize = *(short*)u2;
+	for (short i = 0; i < ipoolSize; i++) {
+		printf("\n  Entry [%d]:\n", i);
+		ld(u2); printf("  -%d\n", *(short*)u2);
+	}
 
 	// the fields pool
-	ld(u2); printf("\nNumber of items in the fields pool: %d\n", *(short*)u2);
+	ld(u2); printf("\n\nNumber of items in the fields pool: %d", *(short*)u2);
 	short fpoolSize = *(short*)u2;
 	for (short i = 0; i < fpoolSize; i++) {
-		printf("Entry %d:\n", i);
+		printf("\n  Entry %d:\n", i);
 
 		ld(u2); // get the access flags
 		parseAccessFlags(*(short*)u2);
@@ -214,27 +224,66 @@ int main(int argc, char** argv) {
 		short apoolSize = *(short*)u2;
 		for (short j = 0; j < apoolSize; j++) {
 			ld(u2); printf("\t\tattribute_name_index located at %d\n", *(short*)u2);
-			ld(u4); printf("\t\tLength of the attribute: %ld\n", *(long*)u4);
-			printf("\t\tThe attribute itself, in Big-Endian:\n");
-			for(long k = 0; k < *(long*)u4; k++) {
+			ld(u4); printf("\t\tLength of the attribute: %d\n", *(int*)u4);
+			printf("\t\tThe attribute itself, in Big-Endian:\n\t\t\t");
+			for(int k = 0; k < *(int*)u4; k++) {
 				ld(u1); print(u1);
 			}
 		}
 	}
 
 
-/*	// the methods pool
-	ld(u2); printf("\nNumber of items in the methods pool: %d\n", *(short*)u2);
+	// the methods pool
+	ld(u2); printf("\n\nNumber of items in the methods pool: %d", *(short*)u2);
 	short mpoolSize = *(short*)u2;
 	for (short i = 0; i < mpoolSize; i++) {
-		printf("Entry %d:\n", i);
-*/
-		
+		printf("\n  Entry %d:\n", i);
 
+		ld(u2); // get the access flags
+		// TODO parseMethodsActionFlags() call here
+
+		ld(u2); printf("\tname_index located at constant pool index %d\n", *(short*)u2);
+		ld(u2); printf("\tdescriptor_index located at constant pool index %d\n", *(short*)u2);
+
+		ld(u2); printf("\tNumber of attributes for this method: %d\n", *(short*)u2);
+		short apoolSize = *(short*)u2;
+		for (short j = 0; j < apoolSize; j++) {
+			ld(u2); printf("\t\tattribute_name_index located at %d\n", *(short*)u2);
+			ld(u4); printf("\t\tLength of the attribute: %d\n", *(int*)u4);
+			printf("\t\tThe attribute itself, in Big-Endian:\n\t\t\t");
+			for(int k = 0; k < *(int*)u4; k++) {
+				ld(u1); print(u1);
+			}
+		}
+	}
+
+	// the generalized attributes pool
+	ld(u2); printf("\n\nNumber of items in the attributes pool: %d", *(short*)u2);
+	short apoolSize = *(short*)u2;
+	for (short i = 0; i < apoolSize; i++) {
+		printf("\n  Entry %d:\n", i);
+
+		short poolSize = *(short*)u2;
+		for (short j = 0; j < poolSize; j++) {
+			ld(u2); printf("\tattribute_name_index located at %d\n", *(short*)u2);
+			ld(u4); printf("\tLength of the attribute: %d\n", *(int*)u4);
+			printf("\tThe attribute itself, in Big-Endian:\n\t\t");
+			for(int k = 0; k < *(int*)u4; k++) {
+				ld(u1); print(u1);
+			}
+		}
+	}
+
+	// checking for no extra bytes at the end
+	if (!byteCount == filesize) {
+		err("extra bytes found at end of .class file!");
+	}
+	printf("\n---\nClassdump complete!\n");
 
 // scratch work
 
-printf("\nTO BE CONTINUED... [scratch work below]\n");
+//printf("\nTO BE CONTINUED... [scratch work below]\n");
+//ld(u8); print(u8);
 
 // end of scratch work
 
