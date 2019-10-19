@@ -1,0 +1,3 @@
+#!/bin/bash
+
+g++ -g -o main classinterpreter.cc
